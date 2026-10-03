@@ -3,7 +3,7 @@ declare(strict_types=1);
 require __DIR__.'/bootstrap.php';
 $license=is_file(__DIR__.'/LICENSE')?(string)file_get_contents(__DIR__.'/LICENSE'):'';
 $notice=is_file(__DIR__.'/NOTICE')?(string)file_get_contents(__DIR__.'/NOTICE'):'';
-$source=trim((string)envv('SOURCE_URL',''));
+$source=trim((string)envv('SOURCE_URL',APP_SOURCE_URL));
 ?><!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e(APP_PRODUCT_NAME)?> · مجوز</title><link rel="stylesheet" href="assets/app.css?v=<?=APP_VERSION?>"></head><body>
 <main class="panel" style="max-width:960px;margin:32px auto">

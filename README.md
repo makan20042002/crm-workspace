@@ -1,5 +1,7 @@
 # CRM Workspace
 
+Source repository: <https://github.com/makan20042002/crm-workspace>
+
 CRM Workspace is a free, self-hosted CRM and operations suite for small and
 medium businesses. It is Persian-first, bilingual, and can run either on a
 PHP hosting account or as a self-contained Windows installation.
