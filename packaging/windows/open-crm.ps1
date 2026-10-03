@@ -1,0 +1,1 @@
+param([string]$Root);$line=Get-Content (Join-Path $Root 'app\.env')|Where-Object{$_-like'APP_URL=*'}|Select-Object -First 1;$url=if($line){$line.Substring(8)}else{'http://localhost:8088'};Start-Process $url

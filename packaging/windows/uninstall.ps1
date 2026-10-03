@@ -1,0 +1,1 @@
+param([string]$Root);schtasks /Delete /F /TN 'CRM Workspace Start' 2>$null;schtasks /Delete /F /TN 'CRM Workspace Cron' 2>$null;schtasks /Delete /F /TN 'CRM Workspace Daily Backup' 2>$null;&powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'installer\offline-stop.ps1')

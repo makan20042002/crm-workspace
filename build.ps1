@@ -1,0 +1,39 @@
+param([switch]$SkipDownloads,[string]$PhpZip='',[string]$MariaDbZip='',[string]$CaddyExe='',[string]$Iscc='',[string]$SignTool='',[string]$CertificateThumbprint='',[string]$TimestampUrl='http://timestamp.digicert.com')
+$ErrorActionPreference='Stop';$root=(Resolve-Path $PSScriptRoot).Path;$version='10.1.3';$dist=Join-Path $root 'dist';$work=Join-Path $dist '_work';$cache=Join-Path $root 'build-cache'
+& (Join-Path $root 'packaging\check-js-css-classes.ps1') -Root $root
+if(Test-Path $work){Remove-Item -LiteralPath $work -Recurse -Force};New-Item -ItemType Directory -Force -Path $dist,$work,$cache|Out-Null
+$excludeDirs=@('.git','dist','build-cache','build-tools','mobile-capacitor','packaging','.agents','.codex','storage','vendor');$excludeFiles=@('.env','config.php','sw.js','build.ps1','TEST-CHECKLIST-V10.md','PRODUCTION-CHECKLIST.md','CHANGED-FILES-V10.md')
+function Copy-App([string]$to){New-Item -ItemType Directory -Force -Path $to|Out-Null;Get-ChildItem -LiteralPath $root -Force|Where-Object{($excludeDirs -notcontains $_.Name) -and ($excludeFiles -notcontains $_.Name)}|ForEach-Object{Copy-Item -LiteralPath $_.FullName -Destination $to -Recurse -Force}}
+$shared=Join-Path $work 'shared-app';Copy-App $shared
+if(Test-Path (Join-Path $root 'vendor\autoload.php')){Copy-Item (Join-Path $root 'vendor') $shared -Recurse -Force}
+elseif($SkipDownloads){
+  $previous=Get-ChildItem -LiteralPath $dist -Filter 'crm-workspace-hosted-*.zip' -File|Sort-Object LastWriteTime -Descending|Select-Object -First 1
+  if($previous){
+    Add-Type -AssemblyName System.IO.Compression;Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive=[IO.Compression.ZipFile]::OpenRead($previous.FullName)
+    try{foreach($entry in $archive.Entries|Where-Object{$_.FullName -like 'vendor/*' -and $_.Name}){$target=Join-Path $shared ($entry.FullName.Replace('/','\'));$parent=Split-Path $target -Parent;if(!(Test-Path $parent)){New-Item -ItemType Directory -Force -Path $parent|Out-Null};[IO.Compression.ZipFileExtensions]::ExtractToFile($entry,$target,$true)}}finally{$archive.Dispose()}
+  }
+}
+if(!(Test-Path (Join-Path $shared 'vendor\autoload.php'))){$phpExe='G:\xampp\php\php.exe';if(-not(Test-Path $phpExe)){$phpExe=(Get-Command php -ErrorAction Stop).Source};$composer='C:\ProgramData\ComposerSetup\bin\composer.phar';if(-not(Test-Path $composer)){throw 'composer.phar not found'};&$phpExe -d extension=zip $composer install --no-dev --prefer-dist --optimize-autoloader --working-dir=$shared --no-interaction --ignore-platform-req=ext-gd --ignore-platform-req=ext-zip;if($LASTEXITCODE -ne 0){throw 'Composer install failed'}}
+$hosting=Join-Path $work "crm-workspace-hosted-$version";$offline=Join-Path $work "crm-workspace-offline-$version\app";Copy-Item $shared $hosting -Recurse;Copy-Item $shared $offline -Recurse
+$utf8NoBom=New-Object Text.UTF8Encoding($false);[IO.File]::WriteAllText((Join-Path $hosting 'package-mode.php'),"<?php return 'hosted';",$utf8NoBom);[IO.File]::WriteAllText((Join-Path $offline 'package-mode.php'),"<?php return 'offline';",$utf8NoBom)
+function PayloadHash([string]$p){$rows=Get-ChildItem $p -Recurse -File|Where-Object{$_.Name -ne 'package-mode.php'}|ForEach-Object{$rel=$_.FullName.Substring($p.Length).TrimStart('\');$h=(Get-FileHash $_.FullName -Algorithm SHA256).Hash;"$rel=$h"};$text=($rows|Sort-Object) -join "`n";$sha=[Security.Cryptography.SHA256]::Create();([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($text))) -replace '-','')}
+if((PayloadHash $hosting) -ne (PayloadHash $offline)){throw 'Hosted and Offline application payloads differ'}
+$hostZip=Join-Path $dist "crm-workspace-hosted-$version.zip";if(Test-Path $hostZip){Remove-Item $hostZip -Force};Add-Type -AssemblyName System.IO.Compression;Add-Type -AssemblyName System.IO.Compression.FileSystem;$stream=[IO.File]::Open($hostZip,[IO.FileMode]::CreateNew);$archive=[IO.Compression.ZipArchive]::new($stream,[IO.Compression.ZipArchiveMode]::Create);try{foreach($file in Get-ChildItem -LiteralPath $hosting -Recurse -File){$relative=$file.FullName.Substring($hosting.Length).TrimStart('\').Replace('\','/');$entry=$archive.CreateEntry($relative,[IO.Compression.CompressionLevel]::Optimal);$input=[IO.File]::OpenRead($file.FullName);$output=$entry.Open();try{$input.CopyTo($output)}finally{$output.Dispose();$input.Dispose()}}}finally{$archive.Dispose();$stream.Dispose()}
+if(!$PhpZip){$PhpZip=Join-Path $cache 'php-8.2.29-nts-win64.zip'};if(!$MariaDbZip){$MariaDbZip=Join-Path $cache 'mariadb-11.4.8-winx64.zip'};if(!$CaddyExe){$CaddyExe=Join-Path $cache 'caddy.exe'}
+if(!$SkipDownloads){if(!(Test-Path $PhpZip)){Invoke-WebRequest 'https://windows.php.net/downloads/releases/archives/php-8.2.29-nts-Win32-vs16-x64.zip' -OutFile $PhpZip};if(!(Test-Path $MariaDbZip) -or (Get-Item $MariaDbZip).Length -lt 1000000){Invoke-WebRequest 'https://archive.mariadb.org/mariadb-11.4.8/winx64-packages/mariadb-11.4.8-winx64.zip' -OutFile $MariaDbZip};if(!(Test-Path $CaddyExe)){Invoke-WebRequest 'https://caddyserver.com/api/download?os=windows&arch=amd64' -OutFile $CaddyExe}}
+foreach($p in @($PhpZip,$MariaDbZip,$CaddyExe)){if(!(Test-Path $p)){throw "Missing runtime: $p"}}
+$offRoot=Split-Path $offline;$runtime=Join-Path $offRoot 'runtime';New-Item -ItemType Directory -Force -Path (Join-Path $runtime 'php'),(Join-Path $runtime 'mariadb'),(Join-Path $runtime 'caddy')|Out-Null;Expand-Archive $PhpZip (Join-Path $runtime 'php') -Force;$mTmp=Join-Path $work 'maria-extract';Expand-Archive $MariaDbZip $mTmp -Force;$mTop=Get-ChildItem $mTmp -Directory|Select-Object -First 1;Copy-Item (Join-Path $mTop.FullName '*') (Join-Path $runtime 'mariadb') -Recurse -Force;Copy-Item $CaddyExe (Join-Path $runtime 'caddy\caddy.exe') -Force
+Copy-Item (Join-Path $root 'packaging\windows') (Join-Path $offRoot 'installer') -Recurse -Force
+if(!$Iscc){foreach($candidate in @((Join-Path $root 'build-tools\inno\ISCC.exe'),'C:\Program Files\Inno Setup 7\ISCC.exe','C:\Program Files (x86)\Inno Setup 6\ISCC.exe')){if(Test-Path $candidate){$Iscc=$candidate;break}}};if(!$Iscc -or !(Test-Path $Iscc)){throw 'Inno Setup ISCC.exe is required to compile the Offline installer.'}
+&$Iscc "/DSourceDir=$offRoot" "/DOutputDir=$dist" "/DAppVersion=$version" (Join-Path $root 'packaging\windows\setup.iss');if($LASTEXITCODE -ne 0){throw 'Inno Setup compilation failed'}
+$offlineExe=Join-Path $dist "crm-workspace-offline-$version-setup.exe"
+if($CertificateThumbprint){
+  if(!$SignTool){$SignTool=(Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue|Sort-Object FullName -Descending|Select-Object -First 1).FullName}
+  if(!$SignTool -or !(Test-Path $SignTool)){throw 'SignTool.exe is required when CertificateThumbprint is provided'}
+  &$SignTool sign /sha1 $CertificateThumbprint /fd SHA256 /tr $TimestampUrl /td SHA256 $offlineExe;if($LASTEXITCODE -ne 0){throw 'Authenticode signing failed'}
+  &$SignTool verify /pa /v $offlineExe;if($LASTEXITCODE -ne 0){throw 'Authenticode verification failed'}
+}
+foreach($p in @($hostZip,$offlineExe)){$h=(Get-FileHash $p -Algorithm SHA256).Hash.ToLowerInvariant();Set-Content -LiteralPath ($p+'.sha256') -Value "$h  $([IO.Path]::GetFileName($p))" -Encoding ASCII}
+$hostHash=(Get-FileHash $hostZip -Algorithm SHA256).Hash.ToLowerInvariant();@{version=$version;url="https://makanlab.tech/downloads/$([IO.Path]::GetFileName($hostZip))";sha256=$hostHash}|ConvertTo-Json|Set-Content (Join-Path $dist 'update-manifest.json') -Encoding UTF8
+Remove-Item -LiteralPath $work -Recurse -Force;Write-Host "Built $hostZip and $offlineExe"

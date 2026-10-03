@@ -1,0 +1,393 @@
+CREATE TABLE IF NOT EXISTS v10_record_deletions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  entity_id BIGINT UNSIGNED NOT NULL,
+  deleted_by BIGINT UNSIGNED NULL,
+  deleted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_deleted (company_id,entity_type,entity_id),
+  KEY ix_v10_deleted_company (company_id,deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_timeline_events (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  entity_id BIGINT UNSIGNED NOT NULL,
+  event_type VARCHAR(40) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  body TEXT NULL,
+  related_type VARCHAR(64) NULL,
+  related_id BIGINT UNSIGNED NULL,
+  user_id BIGINT UNSIGNED NULL,
+  occurred_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  metadata_json LONGTEXT NULL,
+  KEY ix_v10_timeline (company_id,entity_type,entity_id,occurred_at),
+  KEY ix_v10_timeline_related (company_id,related_type,related_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_list_views (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  config_json LONGTEXT NOT NULL,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY ix_v10_views (company_id,user_id,entity_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_workflow_rules (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  trigger_type VARCHAR(40) NOT NULL,
+  trigger_field VARCHAR(80) NULL,
+  condition_json LONGTEXT NULL,
+  action_type VARCHAR(40) NOT NULL,
+  action_json LONGTEXT NOT NULL,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY ix_v10_rules (company_id,entity_type,enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_workflow_runs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  rule_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  entity_id BIGINT UNSIGNED NULL,
+  status VARCHAR(24) NOT NULL,
+  message TEXT NULL,
+  ran_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_v10_runs (company_id,rule_id,ran_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_message_templates (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  channel VARCHAR(16) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  subject VARCHAR(255) NULL,
+  body TEXT NOT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY ix_v10_templates (company_id,channel)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_imap_messages (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  message_uid VARCHAR(190) NOT NULL,
+  customer_id BIGINT UNSIGNED NULL,
+  contact_id BIGINT UNSIGNED NULL,
+  sender VARCHAR(255) NULL,
+  recipient VARCHAR(255) NULL,
+  subject VARCHAR(255) NULL,
+  body_text MEDIUMTEXT NULL,
+  message_date DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_imap (company_id,message_uid),
+  KEY ix_v10_imap_customer (company_id,customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_call_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NULL,
+  customer_id BIGINT UNSIGNED NULL,
+  contact_id BIGINT UNSIGNED NULL,
+  direction VARCHAR(16) NOT NULL,
+  phone VARCHAR(64) NOT NULL,
+  external_id VARCHAR(190) NULL,
+  duration_sec INT NOT NULL DEFAULT 0,
+  status VARCHAR(40) NULL,
+  notes TEXT NULL,
+  started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_v10_calls (company_id,customer_id,started_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_web_forms (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(140) NOT NULL,
+  public_key VARCHAR(64) NOT NULL,
+  title_fa VARCHAR(180) NOT NULL,
+  title_en VARCHAR(180) NOT NULL,
+  fields_json LONGTEXT NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_webform_key (public_key),
+  KEY ix_v10_webforms (company_id,active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_products (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  sku VARCHAR(80) NULL,
+  name_fa VARCHAR(180) NOT NULL,
+  name_en VARCHAR(180) NOT NULL,
+  category VARCHAR(120) NULL,
+  unit VARCHAR(32) NULL,
+  currency VARCHAR(8) NOT NULL DEFAULT 'USD',
+  unit_price DECIMAL(18,4) NOT NULL DEFAULT 0,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  notes TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_product_sku (company_id,sku),
+  KEY ix_v10_products (company_id,active,name_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_sales_targets (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  currency VARCHAR(8) NOT NULL DEFAULT 'USD',
+  target_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_target (company_id,user_id,period_start,period_end)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_tickets (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  customer_id BIGINT UNSIGNED NULL,
+  contact_id BIGINT UNSIGNED NULL,
+  owner_id BIGINT UNSIGNED NULL,
+  ticket_no VARCHAR(64) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  priority VARCHAR(16) NOT NULL DEFAULT 'medium',
+  status VARCHAR(24) NOT NULL DEFAULT 'open',
+  sla_due_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_ticket_no (company_id,ticket_no),
+  KEY ix_v10_tickets (company_id,status,owner_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_ticket_replies (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  ticket_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NULL,
+  portal_user_id BIGINT UNSIGNED NULL,
+  body TEXT NOT NULL,
+  is_canned TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_v10_ticket_replies (company_id,ticket_id,created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_canned_replies (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  body TEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY ix_v10_canned (company_id,title)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_portal_users (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  customer_id BIGINT UNSIGNED NOT NULL,
+  contact_id BIGINT UNSIGNED NULL,
+  email VARCHAR(190) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_portal_email (company_id,email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_fx_rates (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  rate_date DATE NOT NULL,
+  base_currency VARCHAR(8) NOT NULL,
+  quote_currency VARCHAR(8) NOT NULL,
+  rate DECIMAL(20,8) NOT NULL,
+  source VARCHAR(60) NOT NULL DEFAULT 'manual',
+  is_override TINYINT(1) NOT NULL DEFAULT 0,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_fx (company_id,rate_date,base_currency,quote_currency)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_landed_costs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  rfq_id BIGINT UNSIGNED NULL,
+  supplier_quote_id BIGINT UNSIGNED NULL,
+  currency VARCHAR(8) NOT NULL DEFAULT 'USD',
+  base_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+  freight DECIMAL(18,2) NOT NULL DEFAULT 0,
+  insurance DECIMAL(18,2) NOT NULL DEFAULT 0,
+  customs_duty DECIMAL(18,2) NOT NULL DEFAULT 0,
+  other_cost DECIMAL(18,2) NOT NULL DEFAULT 0,
+  fx_rate DECIMAL(20,8) NOT NULL DEFAULT 1,
+  base_currency VARCHAR(8) NOT NULL DEFAULT 'IRR',
+  total_base DECIMAL(20,2) NOT NULL DEFAULT 0,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY ix_v10_landed (company_id,rfq_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_document_checklists (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(32) NOT NULL,
+  entity_id BIGINT UNSIGNED NOT NULL,
+  doc_type VARCHAR(120) NOT NULL,
+  required_by DATE NULL,
+  status VARCHAR(24) NOT NULL DEFAULT 'missing',
+  document_id BIGINT UNSIGNED NULL,
+  notes TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY ix_v10_doccheck (company_id,entity_type,entity_id,status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_accounting_exports (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  target_system VARCHAR(32) NOT NULL,
+  entity_type VARCHAR(32) NOT NULL,
+  date_from DATE NULL,
+  date_to DATE NULL,
+  exported_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_v10_exports (company_id,target_system,created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_backups (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  file_size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_v10_backups (company_id,created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_update_checks (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  current_version VARCHAR(32) NOT NULL,
+  latest_version VARCHAR(32) NULL,
+  manifest_url VARCHAR(500) NULL,
+  status VARCHAR(32) NOT NULL,
+  checked_by BIGINT UNSIGNED NULL,
+  checked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_v10_updatechecks (company_id,checked_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_onboarding (
+  company_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  add_customer_done TINYINT(1) NOT NULL DEFAULT 0,
+  add_deal_done TINYINT(1) NOT NULL DEFAULT 0,
+  invite_user_done TINYINT(1) NOT NULL DEFAULT 0,
+  dismissed TINYINT(1) NOT NULL DEFAULT 0,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY(company_id,user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_orders (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  customer_id BIGINT UNSIGNED NULL,
+  rfq_id BIGINT UNSIGNED NULL,
+  quotation_id BIGINT UNSIGNED NULL,
+  order_no VARCHAR(80) NOT NULL,
+  currency VARCHAR(8) NOT NULL DEFAULT 'USD',
+  amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  status VARCHAR(32) NOT NULL DEFAULT 'confirmed',
+  order_date DATE NOT NULL,
+  notes TEXT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_order_no(company_id,order_no),
+  KEY ix_v10_orders(company_id,status,order_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_order_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  order_id BIGINT UNSIGNED NOT NULL,
+  description VARCHAR(500) NOT NULL,
+  qty DECIMAL(18,3) NOT NULL DEFAULT 1,
+  unit VARCHAR(40) NULL,
+  unit_price DECIMAL(18,4) NOT NULL DEFAULT 0,
+  line_total DECIMAL(18,2) NOT NULL DEFAULT 0,
+  KEY ix_v10_order_items(company_id,order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_quote_item_products (
+  company_id BIGINT UNSIGNED NOT NULL,
+  quotation_item_id BIGINT UNSIGNED NOT NULL,
+  product_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY(company_id,quotation_item_id),
+  KEY ix_v10_qip_product(company_id,product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_password_resets (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_v10_reset_token(token_hash),
+  KEY ix_v10_reset_user(company_id,user_id,expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_document_links (
+  company_id BIGINT UNSIGNED NOT NULL,
+  document_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  entity_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY(company_id,document_id,entity_type,entity_id),
+  KEY ix_v10_doclinks_entity(company_id,entity_type,entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS extension VARCHAR(32) NULL AFTER phone;
+
+CREATE TABLE IF NOT EXISTS v10_task_links (
+  company_id BIGINT UNSIGNED NOT NULL,
+  task_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  entity_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY(company_id,task_id,entity_type,entity_id),
+  KEY ix_v10_task_links_entity(company_id,entity_type,entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_sla_alerts (
+  company_id BIGINT UNSIGNED NOT NULL,
+  ticket_id BIGINT UNSIGNED NOT NULL,
+  alerted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(company_id,ticket_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS v10_shipment_eta_alerts (
+  company_id BIGINT UNSIGNED NOT NULL,
+  shipment_id BIGINT UNSIGNED NOT NULL,
+  eta DATE NOT NULL,
+  sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(company_id,shipment_id,eta)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

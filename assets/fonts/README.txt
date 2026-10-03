@@ -1,0 +1,1 @@
+V10 uses the Vazirmatn font family when it is installed locally. The distribution intentionally does not include a font binary. To self-host Vazirmatn, place your licensed/self-obtained Vazirmatn.woff2 in this folder and change assets/app.css @font-face src to url("fonts/Vazirmatn.woff2") format("woff2").

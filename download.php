@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+require __DIR__.'/v10-lib.php';
+$u=require_login();$id=(int)($_GET['id']??0);$pdo=db();
+$st=$pdo->prepare('SELECT d.* FROM documents d WHERE d.id=? AND d.company_id=? LIMIT 1');$st->execute([$id,$u['company_id']]);$doc=$st->fetch();if(!$doc){http_response_code(404);exit('Not found');}
+$st=$pdo->prepare('SELECT entity_type,entity_id FROM v10_document_links WHERE company_id=? AND document_id=?');$st->execute([$u['company_id'],$id]);$links=$st->fetchAll();if(!$links){if($doc['project_id'])$links[]=['entity_type'=>'projects','entity_id'=>$doc['project_id']];elseif($doc['customer_id'])$links[]=['entity_type'=>'customers','entity_id'=>$doc['customer_id']];elseif($doc['task_id'])$links[]=['entity_type'=>'tasks','entity_id'=>$doc['task_id']];}
+$allowed=false;foreach($links as $link){try{$m=v10_meta((string)$link['entity_type']);if(can_v10($m['read'],$u)&&v10_record_exists((string)$link['entity_type'],(int)$link['entity_id'],(int)$u['company_id'])){$allowed=true;break;}}catch(Throwable $ignore){}}
+if(!$allowed){http_response_code(403);exit('Forbidden');}
+$url=(string)$doc['file_url'];if(!str_starts_with($url,'private://')){header('Location:'.$url);exit;}$rel=substr($url,10);if(!preg_match('#^\d+/[a-f0-9]{48}\.[a-z0-9]{2,6}$#',$rel)){http_response_code(400);exit('Invalid path');}$base=realpath(v10_storage_dir('private_uploads'));$real=realpath(v10_storage_dir('private_uploads').'/'.$rel);if(!$base||!$real||!str_starts_with($real,$base.DIRECTORY_SEPARATOR)||!is_file($real)){http_response_code(404);exit('Not found');}$finfo=new finfo(FILEINFO_MIME_TYPE);$mime=$finfo->file($real)?:'application/octet-stream';header('Content-Type:'.$mime);header('Content-Length:'.filesize($real));header('Content-Disposition:attachment; filename="document-'.$id.'.'.pathinfo($real,PATHINFO_EXTENSION).'"');header('X-Content-Type-Options:nosniff');audit('download','document',$id);readfile($real);exit;
