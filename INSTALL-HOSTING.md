@@ -1,8 +1,12 @@
 # Hosting installation / نصب روی هاست
 
+AI is optional and off by default. Configure a local OpenAI-compatible endpoint or cloud-compatible API in **Settings > AI**. Cloud keys are encrypted with `APP_KEY`; keep that key private and backed up. The hosted CRM works fully if outbound internet access is unavailable.
+
+هوش مصنوعی اختیاری و پیش‌فرض خاموش است. مدل محلی سازگار یا API ابری از مسیر **تنظیمات > هوش مصنوعی** تنظیم می‌شود. کلید ابری با `APP_KEY` رمزگذاری می‌شود و CRM بدون دسترسی اینترنت نیز کامل کار می‌کند.
+
 ## English
 
-1. Upload and extract `crm-workspace-hosted-10.1.3.zip` into the site document root.
+1. Upload and extract `crm-workspace-hosted-10.2.0.zip` into the site document root.
 2. Create an empty MySQL/MariaDB database and user in cPanel or DirectAdmin.
 3. Open `/install.php`. The first page checks PHP 8.2+, PDO MySQL, OpenSSL, Fileinfo, ZIP, GD, mbstring, and writable folders. Resolve every FAIL before continuing.
 4. Enter the database credentials, company, and administrator. HTTPS installs automatically use `APP_ENV=production` and secure session cookies.

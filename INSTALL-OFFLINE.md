@@ -1,8 +1,12 @@
 # Windows Offline installation / نصب آفلاین ویندوز
 
+AI is off by default. The installer can optionally download Ollama and one model selected by PC memory: small (`qwen2.5:3b`), medium (`qwen2.5:7b`), or large (`qwen2.5:14b`). Models are never bundled. The optional download shows progress and can later be managed in **Settings > AI**.
+
+هوش مصنوعی به‌صورت پیش‌فرض خاموش است. نصب‌کننده می‌تواند با انتخاب کاربر Ollama و یک مدل کوچک، متوسط یا بزرگ را متناسب با حافظهٔ رایانه دانلود کند. مدل داخل فایل نصب نیست و تنظیمات بعداً از مسیر **تنظیمات > هوش مصنوعی** قابل مدیریت است.
+
 ## English
 
-1. Run `crm-workspace-offline-10.1.3-setup.exe` as administrator on Windows 10/11 x64.
+1. Run `crm-workspace-offline-10.2.0-setup.exe` as administrator on Windows 10/11 x64.
 2. Choose the web port and daily-backup folder. Keep the optional private-network firewall task selected to connect phones and other PCs.
 3. Setup installs its own PHP 8.2 runtime, MariaDB on `127.0.0.1:3307`, and Caddy. It generates random database and application secrets; database fields are never shown.
 4. The browser opens at the company/admin step. Complete it, then sign in.
