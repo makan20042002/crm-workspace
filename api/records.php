@@ -13,7 +13,7 @@ function records_scope_sql(string $entity,array $m,array $u,array &$args): strin
 }
 function relation_labels(string $entity,array $rows,int $cid): array {
     if(!$rows)return $rows;$pdo=db();
-    $maps=['customer_id'=>['customers','name'],'project_id'=>['projects','name'],'opportunity_id'=>['opportunities','title'],'rfq_id'=>['rfqs','title'],'lead_id'=>['leads','title']];
+    $maps=['customer_id'=>['customers','name'],'project_id'=>['projects','name'],'opportunity_id'=>['opportunities','title'],'rfq_id'=>['rfqs','title'],'lead_id'=>['leads','title'],'owner_id'=>['users','name'],'manager_id'=>['users','name'],'assignee_id'=>['users','name'],'assigned_to'=>['users','name'],'created_by'=>['users','name']];
     foreach($maps as $field=>[$table,$label]){
         $ids=[];foreach($rows as $r)if(!empty($r[$field]))$ids[]=(int)$r[$field];$ids=array_values(array_unique($ids));if(!$ids)continue;
         $in=implode(',',array_fill(0,count($ids),'?'));$args=array_merge([$cid],$ids);$st=$pdo->prepare("SELECT id,`$label` label FROM `$table` WHERE company_id=? AND id IN($in)");$st->execute($args);$lookup=[];foreach($st as $x)$lookup[(int)$x['id']]=$x['label'];foreach($rows as &$r)if(!empty($r[$field]))$r[$field.'_name']=$lookup[(int)$r[$field]]??null;
@@ -50,6 +50,7 @@ try{
 
   case 'record':
     $entity=(string)($_GET['entity']??'');$id=(int)($_GET['id']??0);$m=v10_meta($entity);$row=v10_require_record($entity,$id,$cid);
+    $row=relation_labels($entity,[$row],$cid)[0];
     $custom=[];$st=$pdo->prepare('SELECT cf.id,cf.field_key,cf.label_fa,cf.label_en,cf.field_type,cf.required,cf.options_json,cv.value_text FROM custom_fields cf LEFT JOIN custom_field_values cv ON cv.custom_field_id=cf.id AND cv.entity_type=? AND cv.entity_id=? WHERE cf.company_id=? AND cf.entity_type IN (?,?) AND cf.active=1 ORDER BY cf.position,cf.id');$sing=v10_entity_singular($entity);$st->execute([$sing,$id,$cid,$sing,$entity]);$custom=$st->fetchAll();
     json_response(['ok'=>true,'record'=>$row,'custom_fields'=>$custom,'meta'=>$m]);
 
