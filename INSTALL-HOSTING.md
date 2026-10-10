@@ -6,7 +6,7 @@ AI is optional and off by default. Configure a local OpenAI-compatible endpoint 
 
 ## English
 
-1. Upload and extract `crm-workspace-hosted-10.2.1.zip` into the site document root.
+1. Upload and extract `crm-workspace-hosted-1.2.1.zip` into the site document root.
 2. Create an empty MySQL/MariaDB database and user in cPanel or DirectAdmin.
 3. Open `/install.php`. The first page checks PHP 8.2+, PDO MySQL, OpenSSL, Fileinfo, ZIP, GD, mbstring, and writable folders. Resolve every FAIL before continuing.
 4. Enter the database credentials, company, and administrator. HTTPS installs automatically use `APP_ENV=production` and secure session cookies.
@@ -25,7 +25,7 @@ AI is optional and off by default. Configure a local OpenAI-compatible endpoint 
 
 ## فارسی
 
-۱. فایل `crm-workspace-hosted-10.2.1.zip` را در ریشهٔ دامنه آپلود و Extract کنید.
+۱. فایل `crm-workspace-hosted-1.2.1.zip` را در ریشهٔ دامنه آپلود و Extract کنید.
 ۲. در cPanel یا DirectAdmin یک دیتابیس و کاربر MySQL/MariaDB بسازید.
 ۳. آدرس `/install.php` را باز کنید. صفحهٔ اول نسخهٔ PHP، افزونه‌ها و دسترسی نوشتن پوشه‌ها را بررسی می‌کند. پیش از ادامه همهٔ موارد باید PASS باشند.
 ۴. اطلاعات دیتابیس، شرکت و مدیر را وارد کنید. روی HTTPS، حالت production و کوکی امن به‌طور خودکار فعال می‌شود.

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
-const APP_VERSION = '10.2.1';
+const APP_VERSION = '1.2.1';
+// Monotonic compatibility version used only by the updater and legacy 10.x installations.
+const APP_UPDATE_VERSION = '10.2.1';
 const APP_PRODUCT_NAME = 'CRM Workspace';
 const APP_SESSION_NAME = 'CRMWORKSPACESESSID';
 const APP_CREDIT = ['name'=>'Makan','site'=>'https://makanlab.tech'];
